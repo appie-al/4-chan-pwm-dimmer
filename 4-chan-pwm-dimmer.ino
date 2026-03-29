@@ -15,7 +15,7 @@ ESP8266WebServer httpServer(80);
 ESP8266HTTPUpdateServer httpUpdater;
 const char* update_host = "esp8266-webupdate";
 
-const char* Version = "1.7.8.4";
+const char* Version = "1.7.9";
 const char* compile_date = __DATE__ " " __TIME__;
 #define nr_networks 2
 #define preference_network 0  // this is suppposed to be the network for normal operation
@@ -989,16 +989,23 @@ void handle_and_act_on_off_switches()
         if (one_switch->last_processed_switch_value != sw[one_switch->switch_pin].debounced_data) // switch changed?
         {
           one_switch->last_processed_switch_value = sw[one_switch->switch_pin].debounced_data;
-          if ((one_switch->switch_type  & 0x01) == 0) // pulse
+          if (one_switch->switch_type  & 0x04) // Direct switch -> output?
             {
-              if (!one_switch->last_processed_switch_value) //pushed, logic low !!!
+              set_channel_output_on_or_off (i, one_switch->last_processed_switch_value);
+            }
+           else // it's a output-toggle-type switch
+            {
+              if ((one_switch->switch_type  & 0x01) == 0) // pulse
+                {
+                  if (!one_switch->last_processed_switch_value) //pushed, logic low !!!
+                    {
+                      set_channel_output_toggle (i, (one_switch->switch_type & 0x02));
+                    }
+                }
+               else // switch type is on/off
                 {
                   set_channel_output_toggle (i, (one_switch->switch_type & 0x02));
                 }
-            }
-           else // switch type is on/off
-            {
-              set_channel_output_toggle (i, (one_switch->switch_type & 0x02));
             }
         }
       }
